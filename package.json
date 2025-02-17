@@ -1,0 +1,31 @@
+{
+  "name": "eventflow",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@paypal/react-paypal-js": "^8.8.1",
+    "@stripe/react-stripe-js": "^3.1.1",
+    "@stripe/stripe-js": "^5.6.0",
+    "@thednp/dommatrix": "^2.0.6",
+    "axios": "^1.7.9",
+    "bootstrap-touchspin": "^4.7.3",
+    "isotope-layout": "^3.0.6",
+    "lightgallery": "^2.7.2",
+    "next": "^14.2.13",
+    "react": "^19.0.0",
+    "react-countup": "^6.5.3",
+    "react-curved-text": "^3.0.1",
+    "react-dom": "^19.0.0",
+    "react-modal-video": "^2.0.2",
+    "react-router-dom": "^7.1.3",
+    "stripe": "^17.6.0",
+    "swiper": "^11.1.4",
+    "wowjs": "^1.1.3"
+  }
+}
