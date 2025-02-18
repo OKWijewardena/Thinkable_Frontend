@@ -27,7 +27,7 @@ export default function Home() {
     user:"",
   });
   const [upcomingEvents, setUpcomingEvents] = useState([]);
-  const [hostPermission, setHostPermission] = useState([]);
+  const [hostPermission, setHostPermission] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -132,9 +132,9 @@ export default function Home() {
   };
 
   const handleImageChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
+    if (e.target.files.length > 0) {
+      setImageFile(e.target.files[0]);
+      setImagePreview(URL.createObjectURL(e.target.files[0]));
     }
   };
 
@@ -147,7 +147,7 @@ export default function Home() {
     if (formData.event_image) {
       const formDataForImage = new FormData();
       formDataForImage.append('files', formData.event_image);
-  
+
       try {
         // Upload the image to the server
         const imageUploadResponse = await axios.post('http://localhost:1337/api/upload', formDataForImage, {
@@ -283,10 +283,9 @@ export default function Home() {
       seat_availability: event.seat_availability || "",
       is_premium: event.is_premium || false,
       is_live_stream: event.is_live_stream || false,
-      event_image: event.event_image?.[0]?.url || "",
+      event_image: event.event_image?.[0]?.id || "", // Store image ID
     });
-    setImagePreview(event.event_image[0]?.url || null);
-    console.log(event_image);
+    setImagePreview(event.event_image?.[0]?.url || null);
     setOpenDialog(true);
   };
 
@@ -298,67 +297,73 @@ export default function Home() {
   };
 
   const handleUpdateEvent = async () => {
-  if (!selectedEvent) {
-    alert("No event selected.");
-    return;
-  }
-
-  try {
-    let uploadedImageId = selectedEvent.event_image || formData.event_image;
-
-    // Step 1: Check if a new image is selected and upload it
-    if (imageFile) {
-      try {
-        const imageFormData = new FormData();
-        imageFormData.append("files", imageFile);
-
-        const uploadResponse = await axios.post("http://localhost:1337/api/upload", imageFormData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-
-        if (uploadResponse.status === 200 && uploadResponse.data.length > 0) {
-          uploadedImageId = uploadResponse.data[0]?.id || uploadedImageId;
-        } else {
-          throw new Error("Image upload failed: Unexpected response from server");
-        }
-      } catch (imageError) {
-        console.error("Image Upload Error:", imageError);
-        alert("Failed to upload image. Please try again.");
-        return;
-      }
+    if (!selectedEvent) {
+      alert("No event selected.");
+      return;
     }
 
-    // Step 2: Prepare updated data payload
-    const updatedData = {
-      ...selectedEvent,
-      ...formData,
-      event_image: uploadedImageId,
-    };
-
-    console.log("Updated Event Payload:", updatedData);
-
-    // Step 3: Update event details
     try {
-      const response = await axios.put(`http://localhost:1337/api/events/${selectedEvent.documentId}`, {
-        data: updatedData,
-      });
+      let uploadedImageId = formData.event_image;
+
+      // Upload image if a new file is selected
+      // if (imageFile) {
+      //   try {
+      //     const imageFormData = new FormData();
+      //     imageFormData.append("files", imageFile);
+
+      //     const uploadResponse = await axios.post(
+      //       "http://localhost:1337/api/upload",
+      //       imageFormData,
+      //       {
+      //         headers: { "Content-Type": "multipart/form-data" },
+      //       }
+      //     );
+
+      //     if (uploadResponse.status === 200 && uploadResponse.data.length > 0) {
+      //       uploadedImageId = uploadResponse.data[0]?.id || "";
+      //     } else {
+      //       throw new Error("Image upload failed");
+      //     }
+      //   } catch (imageError) {
+      //     console.error("Image Upload Error:", imageError);
+      //     alert("Failed to upload image. Please try again.");
+      //     return;
+      //   }
+      // }
+
+      // Prepare updated event data
+      const updatedData = {
+        title: formData.title,
+        description: formData.description,
+        date: formData.date,
+        location: formData.location,
+        ticket_price: formData.ticket_price,
+        seat_capacity: formData.seat_capacity,
+        seat_availability: formData.seat_availability,
+        is_premium: formData.is_premium,
+        is_live_stream: formData.is_live_stream,
+      };
+
+      console.log("Updated Event Payload:", updatedData);
+
+      // Send update request
+      const response = await axios.put(
+        `http://localhost:1337/api/events/${selectedEvent.documentId}`,
+        { data: updatedData }
+      );
 
       if (response.status === 200) {
         alert("Event updated successfully!");
         setOpenDialog(false);
         window.location.reload();
       } else {
-        throw new Error("Event update failed: Unexpected response from server");
+        throw new Error("Event update failed");
       }
     } catch (updateError) {
       console.error("Event Update Error:", updateError);
-      alert("Failed to update event. Please check your input and try again.");
+      alert("Failed to update event. Please try again.");
     }
-  } catch (error) {
-    console.error("Unexpected Error:", error);
-    alert("An unexpected error occurred. Please try again later.");
-  }
-};
+  };
 
 
   // Handle event deletion
@@ -683,92 +688,42 @@ const handleDeleteEvent = async (eventId) => {
 )}
 
 
-          {openDialog && (
-  <div className="dialog-backdrop">
-    <div className="dialog-box">
-      <h3>Update Event</h3>
-      <form>
-        <div>
-          <label>Event Name</label>
-          <input type="text" name="title" value={formData.title} onChange={handleChange} />
+{openDialog && (
+        <div className="dialog-backdrop">
+          <div className="dialog-box">
+            <h3>Update Event</h3>
+            <form>
+              <label>Event Name</label>
+              <input type="text" name="title" value={formData.title} onChange={handleChange} />
+
+              <label>Description</label>
+              <textarea name="description" value={formData.description} onChange={handleChange} rows="4"></textarea>
+
+              <label>Date</label>
+              <input type="date" name="date" value={formData.date} onChange={handleChange} />
+
+              <label>Location</label>
+              <input type="text" name="location" value={formData.location} onChange={handleChange} />
+
+              <label>Ticket Price</label>
+              <input type="number" name="ticket_price" value={formData.ticket_price} onChange={handleChange} />
+
+              <label>Event Image</label>
+              <input type="file" onChange={handleImageChange} />
+              {imagePreview && <img src={imagePreview} alt="Preview" style={{ maxWidth: "100%" }} />}
+
+              <div className="button-group">
+                <button type="button" className="cancel-button" onClick={handleCloseDialog}>
+                  Cancel
+                </button>
+                <button type="button" className="update-button" onClick={handleUpdateEvent}>
+                  Update
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-        <div>
-          <label>Description</label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            rows="4"
-          ></textarea>
-        </div>
-        <div>
-          <label>Date</label>
-          <input type="date" name="date" value={formData.date} onChange={handleChange} />
-        </div>
-        <div>
-          <label>Location</label>
-          <input type="text" name="location" value={formData.location} onChange={handleChange} />
-        </div>
-        <div>
-          <label>Ticket Price</label>
-          <input
-            type="number"
-            name="ticket_price"
-            value={formData.ticket_price}
-            onChange={handleChange}
-          />
-        </div>
-        <div>
-          <label>Seat Capacity</label>
-          <input
-            type="number"
-            name="seat_capacity"
-            value={formData.seat_capacity}
-            onChange={handleChange}
-          />
-        </div>
-        <div>
-          <label>Available Seats</label>
-          <input
-            type="number"
-            name="seat_availability"
-            value={formData.seat_availability}
-            onChange={handleChange}
-          />
-        </div>
-        <div className="checkbox-group">
-          <label>
-            <input
-              type="checkbox"
-              name="is_premium"
-              checked={formData.is_premium}
-              onChange={handleChange}
-            />
-            Premium Event
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              name="is_live_stream"
-              checked={formData.is_live_stream}
-              onChange={handleChange}
-            />
-            Live Stream
-          </label>
-        </div>
-        <div className="file-input">
-          <label>Event Image</label>
-          <input type="file" onChange={handleImageChange} />
-          {imagePreview && <img src={imagePreview} alt="Preview" style={{ maxWidth: "100%" }} />}
-        </div>
-        <div className="button-group">
-          <button type="button" className="cancel-button" onClick={handleCloseDialog}>Cancel</button>
-          <button type="button" className="update-button" onClick={handleUpdateEvent}>Update</button>
-        </div>
-      </form>
-    </div>
-  </div>
-)}
+      )}
 
         </>
       </Layout>

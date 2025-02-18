@@ -54,22 +54,21 @@ export default function Register() {
       );
 
       document.cookie = `token=${response.data.jwt}; path=/; max-age=3600; Secure; SameSite=Strict`;
+      document.cookie = `email=${response.data.user.email}; path=/; max-age=3600; Secure; SameSite=Strict`;
+      document.cookie = `documentId=${response.data.user.documentId}; path=/; max-age=3600; Secure; SameSite=Strict`;
 
-      const responseProfile = await axios.post(
-        "http://localhost:1337/api/profiles",
-        {
+      await axios.post("http://localhost:1337/api/profiles", {
+        data: {
           name: name,
           address: address,
           user: email,
-          contact_number: contact
-        }
-      )
-
-      console.log(responseProfile);
+          contact_number: contact,
+        },
+      });
 
 
       // Navigate to the home page
-      window.location.href = "index-2";
+      window.location.href = "/";
     } catch (err) {
       setError("Registration failed. Please try again.");
     }

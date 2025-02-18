@@ -1,6 +1,57 @@
+"use client";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import Layout from "@/components/layout/Layout";
 import Link from "next/link";
 export default function Home() {
+
+  const [formData, setFormData] = useState({
+    name: "",
+    contact_number: "",
+    user: "",
+    message: "",
+  });
+
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return null;
+  };
+
+  const email = getCookie("email");
+  console.log("User Email:", email);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const payload = {
+        data: formData, // Wrapping the form data inside "data" key
+      };
+  
+      const response = await axios.post('http://localhost:1337/api/messages', payload, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+  
+      console.log('Message sent:', response.data);
+      alert('Message added successfully!');
+    } catch (error) {
+      console.error("Error in sending message:", error);
+      alert("Failed to send message. Please try again.");
+    }
+  };
+
   return (
     <>
       <Layout headerStyle={1} footerStyle={1} breadcrumbTitle="CONTACT US">
@@ -18,6 +69,7 @@ export default function Home() {
                   className="contact-form-validated contact-one__form"
                   action="assets/inc/sendemail.php"
                   method="post"
+                  onSubmit={handleSubmit}
                   noValidate
                 >
                   <div className="row">
@@ -27,6 +79,8 @@ export default function Home() {
                           type="text"
                           name="name"
                           placeholder="Your Name"
+                          value={formData.name}
+                      onChange={handleChange}
                           required
                         />
                       </div>
@@ -37,6 +91,8 @@ export default function Home() {
                           type="email"
                           name="email"
                           placeholder="Your Email"
+                          value={email}
+                      onChange={handleChange}
                           required
                         />
                       </div>
@@ -47,22 +103,10 @@ export default function Home() {
                           type="text"
                           name="phone"
                           placeholder="Phone Number"
+                          value={formData.contact_number}
+                      onChange={handleChange}
                           required
                         />
-                      </div>
-                    </div>
-                    <div className="col-xl-6 col-lg-6">
-                      <div className="contact-one__input-box">
-                        <div className="select-box">
-                          <select className="selectmenu wide" defaultValue="Choose Option">
-                            <option value="Choose Option">Choose Option</option>
-                            <option value="Type Of Service 01">Type Of Service 01</option>
-                            <option value="Type Of Service 02">Type Of Service 02</option>
-                            <option value="Type Of Service 03">Type Of Service 03</option>
-                            <option value="Type Of Service 04">Type Of Service 04</option>
-                            <option value="Type Of Service 05">Type Of Service 05</option>
-                          </select>
-                        </div>
                       </div>
                     </div>
                     <div className="col-xl-12">
@@ -70,6 +114,8 @@ export default function Home() {
                         <textarea
                           name="message"
                           placeholder="Your Message"
+                          value={formData.message}
+                      onChange={handleChange}
                         ></textarea>
                       </div>
                       <div className="contact-one__btn-box">

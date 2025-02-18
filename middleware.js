@@ -17,3 +17,4 @@ export function middleware(request) {
 export const config = {
   matcher: ["/index-2/:path*","/event/:path*","/contact/:path*","/event-details/:path*","/host/:path*"], // Protect `/host` and all its subpaths
 };
+ 
