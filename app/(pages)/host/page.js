@@ -18,6 +18,7 @@ export default function Home() {
     is_premium: false,
     is_live_stream: false,
     event_image: null,
+    category_id:"",
   });
   const [hostData,setHostData] = useState({
     name: "",
@@ -27,6 +28,7 @@ export default function Home() {
     user:"",
   });
   const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [eventCategory, setEventCategory] = useState([]);
   const [hostPermission, setHostPermission] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -34,12 +36,15 @@ export default function Home() {
   const [imageFile, setImageFile] = useState(null);
 
   const getCookie = (name) => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(";").shift();
+    if (typeof window !== "undefined") {
+      // Only access document.cookie in the browser
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(";").shift();
+    }
     return null;
   };
-
+  
   const email = getCookie("email");
   console.log("User Email:", email);
 
@@ -47,7 +52,25 @@ export default function Home() {
   useEffect(() => {
     fetchEvents();
     fetchHost();
+    fetchEventCategory();
   }, []);
+
+  const fetchEventCategory = async () => {
+    try {
+      const response = await axios.get('http://localhost:1337/api/event-categories');
+
+      const eventCategoryDataArray = response.data.data.map((eventCategory) => ({
+        id: eventCategory.id,
+        documentId: eventCategory.documentId,
+        category_name: eventCategory.category_name 
+      }));
+
+      setEventCategory(eventCategoryDataArray);
+      
+    } catch (error) {
+      console.error('Error fetching event category:', error);
+    }
+  }
 
   const fetchHost = async () => {
     try {
@@ -73,7 +96,7 @@ export default function Home() {
 
   const fetchEvents = async () => {
     try {
-      const response = await axios.get('http://localhost:1337/api/events?populate=event_image');
+      const response = await axios.get(`http://localhost:1337/api/events?populate=event_image&filters[user][$eq]=${email}`);
       console.log(response);
 
       const eventsData = response.data.data.map((event) => ({
@@ -177,6 +200,9 @@ export default function Home() {
   
       // Include the uploaded image ID in the payload
       formPayload.append('data[event_image]', uploadedImageId);
+
+      // Include the user's email in the payload
+      formPayload.append('data[user]', email);
   
       // Create the event
       const response = await axios.post('http://localhost:1337/api/events', formPayload, {
@@ -199,6 +225,8 @@ export default function Home() {
         is_premium: false,
         is_live_stream: false,
         event_image: null,
+        user:'',
+        category_id: '',
       });
   
       alert('Event added successfully!');
@@ -465,6 +493,23 @@ const handleDeleteEvent = async (eventId) => {
                     />
                   </div>
                 </div>
+                <div className="col-xl-6 col-lg-6">
+      <div className="contact-one__input-box">
+        <select
+          name="category_id"
+          value={formData.category_id}
+          onChange={handleChange}
+          required
+        >
+          <option value="">Select Event Category</option>
+          {eventCategory.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.category_name}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
                 <div className="col-xl-6 col-lg-6">
                   <div className="contact-one__input-box">
                     <input

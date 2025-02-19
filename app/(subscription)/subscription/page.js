@@ -21,12 +21,15 @@ export default function Home() {
 
   // Function to get a cookie value by name
   const getCookie = (name) => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(";").shift();
+    if (typeof window !== "undefined") {
+      // Only access document.cookie in the browser
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(";").shift();
+    }
     return null;
   };
-
+  
   const email = getCookie("email");
   console.log("User Email:", email);
 

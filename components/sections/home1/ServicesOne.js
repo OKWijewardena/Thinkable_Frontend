@@ -52,12 +52,9 @@ export default function ServicesOne() {
                     <span className={service.icon}></span>
                   </div>
                   <h3 className="services-one__title">
-                    <Link href={service.link}>{service.title}</Link>
+                    {service.title}
                   </h3>
                   <p className="services-one__text">{service.description}</p>
-                  <Link href={service.link} className="services-one__read-more">
-                    Read More <span className="icon-arrow-right"></span>
-                  </Link>
                 </div>
               </div>
             ))}

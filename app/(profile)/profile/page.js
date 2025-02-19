@@ -21,15 +21,18 @@ export default function Home() {
   
 
   const getCookie = (name) => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
+    if (typeof window !== "undefined") {
+      // Only access document.cookie in the browser
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(";").shift();
+    }
     return null;
-};
-
-const email = getCookie('email');
+  };
+  
+  const email = getCookie("email");
+  console.log("User Email:", email);
 const documentId = getCookie('documentId');
-console.log(email);
 console.log(documentId);
 
   useEffect(() => {

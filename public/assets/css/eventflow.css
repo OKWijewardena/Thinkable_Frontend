@@ -7286,7 +7286,8 @@ ul {
 .contact-one__input-box input[type="email"],
 .contact-one__input-box input[type="password"],
 .contact-one__input-box input[type="date"],
-.contact-one__input-box input[type="number"] {
+.contact-one__input-box input[type="number"],
+.contact-one__input-box select{
   height: 54px;
   width: 100%;
   background-color: transparent;
