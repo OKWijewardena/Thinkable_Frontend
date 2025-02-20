@@ -30,7 +30,7 @@ export default function Header1({ scroll, isMobileMenu, handleMobileMenu, isSide
                 </div>
                 <div className="main-menu__right">
                   <div className="main-menu__cart-search-nav-sidebar-icon-and-btn-box">
-                    <a href="#" className="main-menu__cart icon-cart"></a>
+                    <a href="/wishlist" className="main-menu__cart icon-cart"></a>
                     <a href="#" className="main-menu__search search-toggler" onClick={handlePopup}>
                       <span className="icon-loupe"></span>
                     </a>

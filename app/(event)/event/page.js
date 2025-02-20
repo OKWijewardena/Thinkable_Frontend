@@ -12,6 +12,19 @@ export default function Home() {
   const [upcomingEvents, setUpcomingEvents] = useState([]); // State for fetched events
   const [filteredEvents, setFilteredEvents] = useState([]); // State for filtered events
 
+  const getCookie = (name) => {
+    if (typeof window !== "undefined") {
+      // Only access document.cookie in the browser
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(";").shift();
+    }
+    return null;
+  };
+  
+  const email = getCookie("email");
+  console.log("User Email:", email);
+
   // Fetch event details
   useEffect(() => {
     const fetchEvents = async () => {
@@ -85,6 +98,44 @@ export default function Home() {
 
     setFilteredEvents(filtered);
   };
+
+  const saveEvent = async (event) => {
+    try {
+        // Ensure event has a valid documentId
+        if (!event?.documentId) {
+            alert("Invalid event data!");
+            return;
+        }
+
+        // Ensure user email exists
+        if (!email) {
+            alert("User email is missing!");
+            return;
+        }
+
+        // Make API request
+        const response = await axios.post("http://localhost:1337/api/user-events", {
+            data: {
+                user: email,
+                event: event.documentId,
+                event_status: "save",
+                event_name: event.title,
+                event_description: event.description
+            },
+        });
+
+        // Success message
+        if (response.status === 200 || response.status === 201) {
+            alert("Your event has been saved!");
+        } else {
+            alert("Failed to save event. Please try again.");
+        }
+    } catch (error) {
+        console.error("Error saving event:", error.response?.data || error.message);
+        alert("An error occurred while saving the event.");
+    }
+};
+
 
   return (
     <>
@@ -176,6 +227,12 @@ export default function Home() {
                                 Buy Ticket{" "}
                                 <span className="icon-arrow-right"></span>
                               </Link>
+                              <button
+                                className="schedule-one__btn thm-btn"
+                                onClick={() => saveEvent(event)}
+                              >
+                                save
+                              </button>
                             </div>
                           </div>
                         </div>

@@ -255,6 +255,7 @@ export default function Home() {
                           <li><a href="#">{plan.description}</a></li>
                         </ul>
                         <h3 className="blog-one__title">{plan.time_period_months} Months</h3>
+                        <h3 className="blog-one__title">${plan.price}</h3>
                         <div className="blog-one__btn-box-two">
                           <button
                             className="blog-one__btn-2 thm-btn"
@@ -345,7 +346,7 @@ export default function Home() {
                             end_date: endDate.toISOString(),
                             subscription_fee: selectedPlan.price,
                             user: email,
-                            payment_type: "Stripe Payment"
+                            payment_type: "Paypal Payment"
                           };
 
                           // Send subscription data to backend

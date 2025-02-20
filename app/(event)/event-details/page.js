@@ -149,11 +149,20 @@ export default function Home() {
     const newBalance = membershipPrice - ticket_price;
     setMembershipPrice(newBalance);
 
+    const newAvailabbleseat = ((event.seat_availability)-1);
+
     try {
       await axios.put(
         `http://localhost:1337/api/profiles/${profileId}`,
         {
           data: { membership_balance: newBalance },
+        }
+      );
+
+      await axios.put(
+        `http://localhost:1337/api/events/${event.documentId}`,
+        {
+          data: { seat_availability: newAvailabbleseat },
         }
       );
 
@@ -235,6 +244,9 @@ export default function Home() {
     
         // Create the ticket after successful payment
                           const purchaseDate = new Date().toISOString();
+
+                          const newAvailabbleseat = ((selectedStripeTicket.seat_availability)-1);
+
                           const ticketData = {
                             data: {
                               user: email, // Using email as user identifier
@@ -247,6 +259,13 @@ export default function Home() {
                           const response = await axios.post(
                             "http://localhost:1337/api/tickets",
                             ticketData
+                          );
+
+                          await axios.put(
+                            `http://localhost:1337/api/events/${selectedStripeTicket.documentId}`,
+                            {
+                              data: { seat_availability: newAvailabbleseat },
+                            }
                           );
               
                           console.log("Ticket added successfully:", response.data);
@@ -465,6 +484,17 @@ export default function Home() {
               
                           // Create the ticket after successful payment
                           const purchaseDate = new Date().toISOString();
+
+                          console.log(selectedTicket.seat_availability);
+
+                          let availabelSeat = selectedTicket.seat_availability;
+                          let documentID = selectedTicket.documentId;
+                          console.log("document ID:",documentID);
+
+                          const newAvailabbleseat = ((availabelSeat)-1);
+
+                          console.log(newAvailabbleseat);
+
                           const ticketData = {
                             data: {
                               user: email, // Using email as user identifier
@@ -477,6 +507,13 @@ export default function Home() {
                           const response = await axios.post(
                             "http://localhost:1337/api/tickets",
                             ticketData
+                          );
+
+                          await axios.put(
+                            `http://localhost:1337/api/events/${documentID}`,
+                            {
+                              data: { seat_availability: newAvailabbleseat },
+                            }
                           );
               
                           console.log("Ticket added successfully:", response.data);
