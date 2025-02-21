@@ -19,6 +19,8 @@ export default function Home() {
     is_live_stream: false,
     event_image: null,
     category_id:"",
+    vip_seats: "",
+    standed_seats: ""
   });
   const [hostData,setHostData] = useState({
     name: "",
