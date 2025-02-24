@@ -397,6 +397,40 @@ ul {
   height: 100%;
 }
 
+.ticket-selection {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.ticket-selection label {
+  display: flex;
+  align-items: center;
+  background-color: linear-gradient(90deg, #4A0AB4, #B20D5D);
+  border: 2px solid transparent;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.ticket-selection input[type="radio"] {
+  display: none;
+}
+
+.ticket-selection input[type="radio"]:checked + label {
+  background-color: linear-gradient(90deg, #4A0AB4, #B20D5D);
+  color: white;
+  border-color: #ffffff;
+}
+
+.ticket-selection label:hover {
+  background-color: #e0e0e0;
+}
+
+
 /* scroll to top */
 .scroll-to-top {
   display: inline-block;
@@ -7287,6 +7321,7 @@ ul {
 .contact-one__input-box input[type="password"],
 .contact-one__input-box input[type="date"],
 .contact-one__input-box input[type="number"],
+.contact-one__input-box input[type="time"],
 .contact-one__input-box select{
   height: 54px;
   width: 100%;

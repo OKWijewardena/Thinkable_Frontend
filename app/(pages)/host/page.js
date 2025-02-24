@@ -20,7 +20,10 @@ export default function Home() {
     event_image: null,
     category_id:"",
     vip_seats: "",
-    standed_seats: ""
+    standed_seats: "",
+    vip_ticket_price:"",
+    standed_ticket_price:"",
+    ticket_type: "normal"
   });
   const [hostData,setHostData] = useState({
     name: "",
@@ -36,6 +39,7 @@ export default function Home() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [imageFile, setImageFile] = useState(null);
+  const [multipleTicket, setMultipleTicket] = useState(false);
 
   const getCookie = (name) => {
     if (typeof window !== "undefined") {
@@ -193,18 +197,37 @@ export default function Home() {
     try {
       // Create the event with the uploaded image ID
       const formPayload = new FormData();
-      for (const key in formData) {
-        // Append the rest of the form data to the payload
-        if (key !== 'event_image') {
-          formPayload.append(`data[${key}]`, formData[key]);
-        }
-      }
+      // for (const key in formData) {
+      //   // Append the rest of the form data to the payload
+      //   if (key !== 'event_image') {
+      //     formPayload.append(`data[${key}]`, formData[key]);
+      //   }
+      // }
   
-      // Include the uploaded image ID in the payload
-      formPayload.append('data[event_image]', uploadedImageId);
+      // Append common form fields
+    formPayload.append("data[title]", formData.title);
+    formPayload.append("data[description]", formData.description);
+    formPayload.append("data[date]", formData.date);
+    formPayload.append("data[location]", formData.location);
+    formPayload.append("data[category_id]", formData.category_id);
+    formPayload.append("data[is_premium]", formData.is_premium);
+    formPayload.append("data[is_live_stream]", formData.is_live_stream);
+    formPayload.append("data[event_image]", uploadedImageId);
+    formPayload.append("data[user]", email);
+    formPayload.append("data[ticket_type]", formData.ticket_type);
+    formPayload.append("data[standed_ticket_price]", formData.standed_ticket_price);
 
-      // Include the user's email in the payload
-      formPayload.append('data[user]', email);
+    // If "normal" ticket, send normal ticket fields
+    if (formData.ticket_type === "normal") {
+      formPayload.append("data[seat_capacity]", formData.seat_capacity);
+    }
+
+    // If "multiple" ticket, send multiple ticket fields
+    if (formData.ticket_type === "multiple") {
+      formPayload.append("data[vip_ticket_price]", formData.vip_ticket_price);
+      formPayload.append("data[vip_seats]", formData.vip_seats);
+      formPayload.append("data[standed_seats]", formData.standed_seats);
+    }
   
       // Create the event
       const response = await axios.post('http://localhost:1337/api/events', formPayload, {
@@ -229,6 +252,10 @@ export default function Home() {
         event_image: null,
         user:'',
         category_id: '',
+        vip_seats: '',
+        standed_seats: '',
+        ticket_type: "normal"
+
       });
   
       alert('Event added successfully!');
@@ -430,6 +457,8 @@ const handleDeleteEvent = async (eventId) => {
             <p className="contact-one__text">
               Share your event details and bring your community together.
             </p>
+
+            
             <form
               className="contact-form-validated contact-one__form"
               onSubmit={handleSubmit}
@@ -484,18 +513,6 @@ const handleDeleteEvent = async (eventId) => {
                   </div>
                 </div>
                 <div className="col-xl-6 col-lg-6">
-                  <div className="contact-one__input-box">
-                    <input
-                      type="number"
-                      name="ticket_price"
-                      placeholder="Ticket Price"
-                      value={formData.ticket_price}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="col-xl-6 col-lg-6">
       <div className="contact-one__input-box">
         <select
           name="category_id"
@@ -512,6 +529,100 @@ const handleDeleteEvent = async (eventId) => {
         </select>
       </div>
     </div>
+
+                <div className="col-xl-12">
+  <div className="contact-one__input-box">
+    <div className="ticket-selection">
+      <input
+        type="radio"
+        id="normal"
+        name="ticket_type"
+        value="normal"
+        checked={formData.ticket_type === "normal"}
+        onChange={handleChange}
+      />
+      <label htmlFor="normal">Normal Ticket</label>
+
+      <input
+        type="radio"
+        id="multiple"
+        name="ticket_type"
+        value="multiple"
+        checked={formData.ticket_type === "multiple"}
+        onChange={handleChange}
+      />
+      <label htmlFor="multiple">Multiple Ticket</label>
+    </div>
+  </div>
+</div>
+
+{formData.ticket_type === "multiple" && (
+  <div className="row">
+    <div className="col-xl-6 col-lg-6">
+    <div className="contact-one__input-box">
+      <input
+        type="number"
+        name="vip_ticket_price"
+        placeholder="VIP Ticket Price"
+        value={formData.vip_ticket_price}
+        onChange={handleChange}
+        required
+      />
+    </div>
+  </div>
+  <div className="col-xl-6 col-lg-6">
+    <div className="contact-one__input-box">
+      <input
+        type="number"
+        name="standed_ticket_price"
+        placeholder="Standed Ticket Price"
+        value={formData.standed_ticket_price}
+        onChange={handleChange}
+        required
+      />
+    </div>
+  </div>
+  <div className="col-xl-6 col-lg-6">
+    <div className="contact-one__input-box">
+      <input
+        type="number"
+        name="vip_seats"
+        placeholder="VIP seat capacity"
+        value={formData.vip_seats}
+        onChange={handleChange}
+        required
+      />
+    </div>
+  </div>
+  <div className="col-xl-6 col-lg-6">
+    <div className="contact-one__input-box">
+      <input
+        type="number"
+        name="standed_seats"
+        placeholder="Standed seat capacity"
+        value={formData.standed_seats}
+        onChange={handleChange}
+        required
+      />
+    </div>
+  </div>
+  </div>
+)}
+
+{formData.ticket_type === "normal" && (
+  <div className="row">
+                <div className="col-xl-6 col-lg-6">
+                  <div className="contact-one__input-box">
+                    <input
+                      type="number"
+                      name="standed_ticket_price"
+                      placeholder="Ticket Price"
+                      value={formData.standed_ticket_price}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                </div>
                 <div className="col-xl-6 col-lg-6">
                   <div className="contact-one__input-box">
                     <input
@@ -524,6 +635,8 @@ const handleDeleteEvent = async (eventId) => {
                     />
                   </div>
                 </div>
+                </div>
+)}
                 <div className="col-xl-6 col-lg-6">
                   <div className="contact-one__input-box">
                     <input
