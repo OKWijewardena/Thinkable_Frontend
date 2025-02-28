@@ -6,7 +6,7 @@ import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import axios from "axios";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import Stripe from 'stripe';
+import emailjs from "@emailjs/browser";
 
 import Layout from "@/components/layout/Layout";
 
@@ -20,6 +20,7 @@ export default function Home() {
   const [selectedStripeTicket, setSelectedStripeTicket] = useState(null);
   const [clientSecret, setClientSecret] = useState(null);
   const [hostContactNumber, setHostContactNumber] = useState();
+  const [buyTicketType, setBuyTicketType] = useState();
 
   const searchParams = useSearchParams();
   const documentId = searchParams.get("documentId");
@@ -60,6 +61,11 @@ export default function Home() {
           event_image: event.event_image
             ? [{ url: `http://localhost:1337${event.event_image[0]?.url}` }]
             : [],
+            vip_seats: event.vip_seats,
+            standed_seats: event.standed_seats,
+            vip_ticket_price: event.vip_ticket_price,
+            standed_ticket_price: event.standed_ticket_price,
+            ticket_type: event.ticket_type
         }));
 
         // Filter the event matching the documentId
@@ -136,80 +142,217 @@ export default function Home() {
   };
 
   const handleUpdateMembership = async (ticket_price, event) => {
-    if (membershipPrice < ticket_price) {
-      alert("Insufficient balance to buy this ticket!");
-      return;
-    }
+    if (buyTicketType === "vip"){
 
-    const isConfirmed = confirm(
-      `Are you sure you want to buy this ticket for $${ticket_price}?`
-    );
-    if (!isConfirmed) return;
-
-    const newBalance = membershipPrice - ticket_price;
-    setMembershipPrice(newBalance);
-
-    const newAvailabbleseat = ((event.seat_availability)-1);
-
-    try {
-      await axios.put(
-        `http://localhost:1337/api/profiles/${profileId}`,
-        {
-          data: { membership_balance: newBalance },
-        }
-      );
-
-      await axios.put(
-        `http://localhost:1337/api/events/${event.documentId}`,
-        {
-          data: { seat_availability: newAvailabbleseat },
-        }
-      );
-
-      const purchaseDate = new Date().toISOString();
-
-      await axios.post("http://localhost:1337/api/tickets", {
-        data: {
-          user: email,
-          event: event.documentId,
-          price: event.ticket_price,
-          purchase_date: purchaseDate,
-        },
-      });
-
-      alert("Ticket purchased successfully!");
-    } catch (error) {
-      console.error("Error updating membership or creating ticket:", error);
-    }
-  };
-
-  const createPaymentIntent = async (event) => {
-    try {
-      const response = await fetch("https://api.stripe.com/v1/payment_intents", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Authorization: `Bearer sk_test_51NxmUQJSn6JcxC7Vt2kGKXaaA7maL4adID8CeHF5UrllHiwXX1o4T4y47pP9LlUQfGKL8K62zm1Vu3crspfqEUP400DReYLtTk`, // Use environment variable
-        },
-        body: new URLSearchParams({
-          amount: event.ticket_price, // Convert to cents
-          currency: "usd",
-          description: event.title,
-        }),
-      });
-  
-      const data = await response.json();
-  
-      if (data.error) {
-        console.error("Error creating payment intent:", data.error);
+      if (membershipPrice < event.vip_ticket_price) {
+        alert("Insufficient balance to buy this ticket!");
         return;
       }
   
-      console.log("Client Secret:", data.client_secret);
-      setClientSecret(data.client_secret);
-    } catch (error) {
-      console.error("Error creating payment intent:", error);
+      const isConfirmed = confirm(
+        `Are you sure you want to buy this ticket for $${event.vip_ticket_price}?`
+      );
+      if (!isConfirmed) return;
+  
+      const newBalance = membershipPrice - event.vip_ticket_price;
+      setMembershipPrice(newBalance);
+  
+      const newAvailabbleseat = ((event.seat_availability)-1);
+
+      const newAvailableVipSeats = ((event.vip_seats)-1);
+  
+      try {
+        await axios.put(
+          `http://localhost:1337/api/profiles/${profileId}`,
+          {
+            data: { membership_balance: newBalance },
+          }
+        );
+  
+        await axios.put(
+          `http://localhost:1337/api/events/${event.documentId}`,
+          {
+            data: { seat_availability: newAvailabbleseat,
+            vip_seats: newAvailableVipSeats },
+          }
+        );
+  
+        const purchaseDate = new Date().toISOString();
+  
+        await axios.post("http://localhost:1337/api/tickets", {
+          data: {
+            user: email,
+            event: event.documentId,
+            price: event.vip_ticket_price,
+            purchase_date: purchaseDate,
+          },
+        });
+
+        // Send Email Invoice via EmailJS
+        const emailParams = {
+          email_to: email,
+          event_name: event.title,
+          ticket_type: buyTicketType.toUpperCase(), // "VIP" or "STANDARD"
+          price: event.vip_ticket_price,
+          purchase_date: purchaseDate,
+        };
+
+  emailjs
+    .send(
+      "service_zfsdlu6", // EmailJS Service ID
+      "template_s4fqgwj", // EmailJS Template ID
+      emailParams,
+      "t8hJMiytKA_wek1w5" // EmailJS Public Key
+    )
+    .then((result) => {
+      console.log("Email sent successfully:", result.text);
+    })
+    .catch((err) => {
+      console.error("Error sending email:", err);
+    });
+  
+        alert("Ticket purchased successfully!");
+      } catch (error) {
+        console.error("Error updating membership or creating ticket:", error);
+      }
+
+    } else {
+
+      if (membershipPrice < event.standed_ticket_price) {
+        alert("Insufficient balance to buy this ticket!");
+        return;
+      }
+  
+      const isConfirmed = confirm(
+        `Are you sure you want to buy this ticket for $${event.standed_ticket_price}?`
+      );
+      if (!isConfirmed) return;
+  
+      const newBalance = membershipPrice - event.standed_ticket_price;
+      setMembershipPrice(newBalance);
+  
+      const newAvailabbleseat = ((event.seat_availability)-1);
+
+      const newAvailableStandedSeats = ((event.standed_seats)-1);
+  
+      try {
+        await axios.put(
+          `http://localhost:1337/api/profiles/${profileId}`,
+          {
+            data: { membership_balance: newBalance },
+          }
+        );
+  
+        await axios.put(
+          `http://localhost:1337/api/events/${event.documentId}`,
+          {
+            data: { seat_availability: newAvailabbleseat,
+            standed_seats: newAvailableStandedSeats },
+          }
+        );
+  
+        const purchaseDate = new Date().toISOString();
+  
+        await axios.post("http://localhost:1337/api/tickets", {
+          data: {
+            user: email,
+            event: event.documentId,
+            price: event.standed_ticket_price,
+            purchase_date: purchaseDate,
+          },
+        });
+
+        // Send Email Invoice via EmailJS
+        const emailParams = {
+          email_to: email,
+          event_name: event.title,
+          ticket_type: buyTicketType.toUpperCase(), // "VIP" or "STANDARD"
+          price: event.standed_ticket_price,
+          purchase_date: purchaseDate,
+        };
+
+  emailjs
+    .send(
+      "service_zfsdlu6", // EmailJS Service ID
+      "template_s4fqgwj", // EmailJS Template ID
+      emailParams,
+      "t8hJMiytKA_wek1w5" // EmailJS Public Key
+    )
+    .then((result) => {
+      console.log("Email sent successfully:", result.text);
+    })
+    .catch((err) => {
+      console.error("Error sending email:", err);
+    });
+  
+        alert("Ticket purchased successfully!");
+      } catch (error) {
+        console.error("Error updating membership or creating ticket:", error);
+      }
+
     }
+    
+  };
+
+  const createPaymentIntent = async (event) => {
+    if (buyTicketType === "vip"){
+      try {
+        const response = await fetch("https://api.stripe.com/v1/payment_intents", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Authorization: `Bearer sk_test_51NxmUQJSn6JcxC7Vt2kGKXaaA7maL4adID8CeHF5UrllHiwXX1o4T4y47pP9LlUQfGKL8K62zm1Vu3crspfqEUP400DReYLtTk`, // Use environment variable
+          },
+          body: new URLSearchParams({
+            amount: event.vip_ticket_price, // Convert to cents
+            currency: "usd",
+            description: event.title,
+          }),
+        });
+    
+        const data = await response.json();
+    
+        if (data.error) {
+          console.error("Error creating payment intent:", data.error);
+          return;
+        }
+    
+        console.log("Client Secret:", data.client_secret);
+        setClientSecret(data.client_secret);
+      } catch (error) {
+        console.error("Error creating payment intent:", error);
+      }
+
+    } else {
+      try {
+        const response = await fetch("https://api.stripe.com/v1/payment_intents", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Authorization: `Bearer sk_test_51NxmUQJSn6JcxC7Vt2kGKXaaA7maL4adID8CeHF5UrllHiwXX1o4T4y47pP9LlUQfGKL8K62zm1Vu3crspfqEUP400DReYLtTk`, // Use environment variable
+          },
+          body: new URLSearchParams({
+            amount: event.standed_ticket_price, // Convert to cents
+            currency: "usd",
+            description: event.title,
+          }),
+        });
+    
+        const data = await response.json();
+    
+        if (data.error) {
+          console.error("Error creating payment intent:", data.error);
+          return;
+        }
+    
+        console.log("Client Secret:", data.client_secret);
+        setClientSecret(data.client_secret);
+      } catch (error) {
+        console.error("Error creating payment intent:", error);
+      }
+
+    }
+    
   };
 
   function CheckoutForm() {
@@ -219,64 +362,178 @@ export default function Home() {
     const handleSubmit = async (e) => {
       e.preventDefault();
       if (!stripe || !elements) return;
-    
-      try {
-        // Confirm the payment but do NOT auto-redirect yet
-        const { error, paymentIntent } = await stripe.confirmPayment({
-          elements,
-          redirect: "if_required", // Prevents automatic redirection
-        });
-    
-        if (error) {
-          console.error("Error confirming payment:", error);
-          alert("Payment failed!");
-          return;
+
+      if(buyTicketType === "vip"){
+        try {
+          // Confirm the payment but do NOT auto-redirect yet
+          const { error, paymentIntent } = await stripe.confirmPayment({
+            elements,
+            redirect: "if_required", // Prevents automatic redirection
+          });
+      
+          if (error) {
+            console.error("Error confirming payment:", error);
+            alert("Payment failed!");
+            return;
+          }
+      
+          // Ensure payment is successful before proceeding
+          if (paymentIntent.status !== "succeeded") {
+            console.error("Payment not successful:", paymentIntent);
+            alert("Payment not successful. Please try again.");
+            return;
+          }
+      
+          console.log("Transaction successful:", paymentIntent);
+      
+          // Create the ticket after successful payment
+                            const purchaseDate = new Date().toISOString();
+  
+                            const newAvailabbleseat = ((selectedStripeTicket.seat_availability)-1);
+                            const newAvailableVipSeats = ((selectedStripeTicket.vip_seats)-1);
+  
+                            const ticketData = {
+                              data: {
+                                user: email, // Using email as user identifier
+                                event: selectedStripeTicket.documentId, // Use event documentId
+                                price: selectedStripeTicket.vip_ticket_price,
+                                purchase_date: purchaseDate,
+                              },
+                            };
+                
+                            const response = await axios.post(
+                              "http://localhost:1337/api/tickets",
+                              ticketData
+                            );
+  
+                            await axios.put(
+                              `http://localhost:1337/api/events/${selectedStripeTicket.documentId}`,
+                              {
+                                data: { seat_availability: newAvailabbleseat,
+                                        vip_seats: newAvailableVipSeats },
+                              }
+                            );
+                
+                            console.log("Ticket added successfully:", response.data);
+          alert("Ticket purchase successfully");
+
+          // Send Email Invoice via EmailJS
+          const emailParams = {
+            email_to: email,
+            event_name: selectedStripeTicket.title,
+            ticket_type: buyTicketType.toUpperCase(), // "VIP" or "STANDARD"
+            price: selectedStripeTicket.vip_ticket_price,
+            purchase_date: purchaseDate,
+          };
+
+    emailjs
+      .send(
+        "service_zfsdlu6", // EmailJS Service ID
+        "template_s4fqgwj", // EmailJS Template ID
+        emailParams,
+        "t8hJMiytKA_wek1w5" // EmailJS Public Key
+      )
+      .then((result) => {
+        console.log("Email sent successfully:", result.text);
+      })
+      .catch((err) => {
+        console.error("Error sending email:", err);
+      });
+      
+          // Manually redirect after all updates are complete
+          window.location.href = `${window.location.origin}/profile`;
+      
+        } catch (error) {
+          console.error("Error processing subscription:", error);
+          alert("Payment was successful, but subscription could not be created.");
         }
-    
-        // Ensure payment is successful before proceeding
-        if (paymentIntent.status !== "succeeded") {
-          console.error("Payment not successful:", paymentIntent);
-          alert("Payment not successful. Please try again.");
-          return;
+
+      } else {
+
+        try {
+          // Confirm the payment but do NOT auto-redirect yet
+          const { error, paymentIntent } = await stripe.confirmPayment({
+            elements,
+            redirect: "if_required", // Prevents automatic redirection
+          });
+      
+          if (error) {
+            console.error("Error confirming payment:", error);
+            alert("Payment failed!");
+            return;
+          }
+      
+          // Ensure payment is successful before proceeding
+          if (paymentIntent.status !== "succeeded") {
+            console.error("Payment not successful:", paymentIntent);
+            alert("Payment not successful. Please try again.");
+            return;
+          }
+      
+          console.log("Transaction successful:", paymentIntent);
+      
+          // Create the ticket after successful payment
+                            const purchaseDate = new Date().toISOString();
+  
+                            const newAvailabbleseat = ((selectedStripeTicket.seat_availability)-1);
+                            const newAvailableStandedSeats = ((selectedStripeTicket.standed_seats)-1);
+  
+                            const ticketData = {
+                              data: {
+                                user: email, // Using email as user identifier
+                                event: selectedStripeTicket.documentId, // Use event documentId
+                                price: selectedStripeTicket.standed_ticket_price,
+                                purchase_date: purchaseDate,
+                              },
+                            };
+                
+                            const response = await axios.post(
+                              "http://localhost:1337/api/tickets",
+                              ticketData
+                            );
+  
+                            await axios.put(
+                              `http://localhost:1337/api/events/${selectedStripeTicket.documentId}`,
+                              {
+                                data: { seat_availability: newAvailabbleseat,
+                                        standed_seat: newAvailableStandedSeats },
+                              }
+                            );
+                
+                            console.log("Ticket added successfully:", response.data);
+          alert("Ticket purchase successfully");
+
+          // Send Email Invoice via EmailJS
+          const emailParams = {
+            email_to: email,
+            event_name: selectedStripeTicket.title,
+            ticket_type: buyTicketType.toUpperCase(), // "VIP" or "STANDARD"
+            price: selectedStripeTicket.standed_ticket_price,
+            purchase_date: purchaseDate,
+          };
+
+    emailjs
+      .send(
+        "service_zfsdlu6", // EmailJS Service ID
+        "template_s4fqgwj", // EmailJS Template ID
+        emailParams,
+        "t8hJMiytKA_wek1w5" // EmailJS Public Key
+      )
+      .then((result) => {
+        console.log("Email sent successfully:", result.text);
+      })
+      .catch((err) => {
+        console.error("Error sending email:", err);
+      });
+      
+          // ✅ Manually redirect after all updates are complete
+          window.location.href = `${window.location.origin}/profile`;
+      
+        } catch (error) {
+          console.error("Error processing subscription:", error);
+          alert("Payment was successful, but subscription could not be created.");
         }
-    
-        console.log("Transaction successful:", paymentIntent);
-    
-        // Create the ticket after successful payment
-                          const purchaseDate = new Date().toISOString();
 
-                          const newAvailabbleseat = ((selectedStripeTicket.seat_availability)-1);
-
-                          const ticketData = {
-                            data: {
-                              user: email, // Using email as user identifier
-                              event: selectedStripeTicket.documentId, // Use event documentId
-                              price: selectedStripeTicket.ticket_price,
-                              purchase_date: purchaseDate,
-                            },
-                          };
-              
-                          const response = await axios.post(
-                            "http://localhost:1337/api/tickets",
-                            ticketData
-                          );
-
-                          await axios.put(
-                            `http://localhost:1337/api/events/${selectedStripeTicket.documentId}`,
-                            {
-                              data: { seat_availability: newAvailabbleseat },
-                            }
-                          );
-              
-                          console.log("Ticket added successfully:", response.data);
-        alert("Ticket purchase successfully");
-    
-        // ✅ Manually redirect after all updates are complete
-        window.location.href = `${window.location.origin}/profile`;
-    
-      } catch (error) {
-        console.error("Error processing subscription:", error);
-        alert("Payment was successful, but subscription could not be created.");
       }
     };
     
@@ -427,8 +684,13 @@ export default function Home() {
                   </div>
                   
                   <div className="event-details__ticket-two">
+
+
+                  {/* if ticket type normal */}
+                  {event.ticket_type === "normal" && (
+                    <div>
                     <h3 className="event-details__ticket-two-title">
-                      ${event.ticket_price}
+                      ${event.standed_ticket_price}
                     </h3>
                     <p className="event-details__ticket-two-text">
                       This is your ticet price. Buy the ticket and enjoy your movment
@@ -469,7 +731,7 @@ export default function Home() {
                             {
                               amount: {
                                 currency_code: "USD",
-                                value: selectedTicket.ticket_price,
+                                value: selectedTicket.standed_ticket_price,
                               },
                               description: selectedTicket.title,
                             },
@@ -499,7 +761,7 @@ export default function Home() {
                             data: {
                               user: email, // Using email as user identifier
                               event: selectedTicket.documentId, // Use event documentId
-                              price: selectedTicket.ticket_price,
+                              price: selectedTicket.standed_ticket_price,
                               purchase_date: purchaseDate,
                             },
                           };
@@ -547,6 +809,337 @@ export default function Home() {
                     </Elements>
                   )}
                     </div>
+                    </div>
+                  )}
+
+                  {/* if ticket type multiple */}
+                  {event.ticket_type === "multiple" && (
+                    <div>
+                    <h3 className="event-details__ticket-two-title">
+                      VIP : ${event.vip_ticket_price}
+                    </h3>
+                    <br/>
+                    <h3 className="event-details__ticket-two-title">
+                      Standed : ${event.standed_ticket_price}
+                    </h3>
+
+                    <p className="event-details__ticket-two-text">
+                      This is your ticet price. Buy the ticket and enjoy your movment
+                      Events are special occasions where people gather together
+                      to celebrate...
+                    </p>
+                    <div className="event-details__ticket-two-btn-box">
+                    <button
+                          className="event-details__ticket-two-btn thm-btn"
+                          onClick={() => setBuyTicketType("vip")}
+                        >
+                          Buy VIP Ticket
+                        </button>
+                        <br/><br/>
+                        <button
+                          className="event-details__ticket-two-btn thm-btn"
+                          onClick={() => setBuyTicketType("standed")}
+                        >
+                          Buy Standed Ticket
+                        </button>
+                    </div>
+                    {buyTicketType === "vip" && (
+                      <div>
+                        <p className="event-details__ticket-two-text">
+                      Buy vip Tickets with those options
+                    </p>
+                        <div className="event-details__ticket-two-btn-box">
+                    <button
+                          className="event-details__ticket-two-btn thm-btn"
+                          onClick={() => handleUpdateMembership(event.vip_ticket_price, event)}
+                        >
+                          Buy VIP Ticket with subscription
+                        </button>
+                      <br/><br/>
+                      <button
+                        href="#"
+                        className="event-details__ticket-two-btn thm-btn"
+                        onClick={() => setSelectedTicket(event)}
+                      >
+                        Buy VIP Ticket with Paypal
+                      </button>
+                      <br/><br/>
+                      {/* PayPal Checkout */}
+          {selectedTicket && (
+                <div className="paypal-container">
+                  <h3>Complete Payment</h3>
+                  <br/>
+                  <PayPalScriptProvider
+                    options={{
+                      "client-id": "AYwP3fdXqQXLwOEm5ZlcdhucyoS3pWvcRfqZcSdmwweLZzYmsCr7jtEE1m9z6KXBHL0IwS9svhMyUXzL",
+                      currency: "USD",
+                    }}
+                  >
+                    <PayPalButtons
+                      createOrder={(data, actions) => {
+                        return actions.order.create({
+                          purchase_units: [
+                            {
+                              amount: {
+                                currency_code: "USD",
+                                value: selectedTicket.vip_ticket_price,
+                              },
+                              description: selectedTicket.title,
+                            },
+                          ],
+                        });
+                      }}
+                      onApprove={async (data, actions) => {
+                        try {
+                          const order = await actions.order.capture();
+                          console.log("Transaction successful:", order);
+                          alert(`Payment successful for ${selectedTicket.title}!`);
+              
+                          // Create the ticket after successful payment
+                          const purchaseDate = new Date().toISOString();
+
+                          console.log(selectedTicket.seat_availability);
+
+                          let availabelSeat = selectedTicket.seat_availability;
+                          let availabelVipSeat = selectedTicket.vip_seats;
+                          let documentID = selectedTicket.documentId;
+                          console.log("document ID:",documentID);
+
+                          const newAvailabbleseat = ((availabelSeat)-1);
+                          const newAvailabbleVipseat = ((availabelVipSeat)-1);
+
+                          console.log(newAvailabbleseat);
+
+                          const ticketData = {
+                            data: {
+                              user: email, // Using email as user identifier
+                              event: selectedTicket.documentId, // Use event documentId
+                              price: selectedTicket.vip_ticket_price,
+                              purchase_date: purchaseDate,
+                            },
+                          };
+              
+                          const response = await axios.post(
+                            "http://localhost:1337/api/tickets",
+                            ticketData
+                          );
+
+                          await axios.put(
+                            `http://localhost:1337/api/events/${documentID}`,
+                            {
+                              data: { seat_availability: newAvailabbleseat,
+                              vip_seats: newAvailabbleVipseat },
+                            }
+                          );
+
+                          // Send Email Invoice via EmailJS
+          const emailParams = {
+            email_to: email,
+            event_name: selectedStripeTicket.title,
+            ticket_type: buyTicketType.toUpperCase(), // "VIP" or "STANDARD"
+            price: selectedStripeTicket.vip_ticket_price,
+            purchase_date: purchaseDate,
+          };
+
+    emailjs
+      .send(
+        "service_zfsdlu6", // EmailJS Service ID
+        "template_s4fqgwj", // EmailJS Template ID
+        emailParams,
+        "t8hJMiytKA_wek1w5" // EmailJS Public Key
+      )
+      .then((result) => {
+        console.log("Email sent successfully:", result.text);
+      })
+      .catch((err) => {
+        console.error("Error sending email:", err);
+      });
+              
+                          console.log("Ticket added successfully:", response.data);
+                          alert("Ticket has been added successfully!");
+                        } catch (error) {
+                          console.error("Error adding ticket:", error);
+                          alert("Payment was successful, but ticket creation failed!");
+                        }
+                      }}
+                      onError={(err) => {
+                        console.error("PayPal Checkout error:", err);
+                        alert("Payment failed!");
+                      }}
+                    />
+                  </PayPalScriptProvider>
+                </div>
+              )}
+              <button 
+                        href="#"
+                        className="event-details__ticket-two-btn thm-btn"
+                        onClick={() => {createPaymentIntent(event);
+                        setSelectedStripeTicket(event);}}
+                      >
+                        Buy VIP Ticket with Stripe
+                      </button>
+                      <br/><br/>
+                        {/* Stripe Checkout Button */}
+                  {clientSecret && (
+                    <Elements stripe={stripePromise} options={{ clientSecret }}>
+                      <CheckoutForm />
+                    </Elements>
+                  )}
+                    </div>
+                        </div>
+                    )}
+
+
+{buyTicketType === "standed" && (
+                      <div>
+                        <p className="event-details__ticket-two-text">
+                      Buy standed Tickets with those options
+                    </p>
+                        <div className="event-details__ticket-two-btn-box">
+                    <button
+                          className="event-details__ticket-two-btn thm-btn"
+                          onClick={() => handleUpdateMembership(event.standed_ticket_price, event)}
+                        >
+                          Buy Standed Ticket with subscription
+                        </button>
+                      <br/><br/>
+                      <button
+                        href="#"
+                        className="event-details__ticket-two-btn thm-btn"
+                        onClick={() => setSelectedTicket(event)}
+                      >
+                        Buy Standed Ticket with Paypal
+                      </button>
+                      <br/><br/>
+                      {/* PayPal Checkout */}
+          {selectedTicket && (
+                <div className="paypal-container">
+                  <h3>Complete Payment</h3>
+                  <br/>
+                  <PayPalScriptProvider
+                    options={{
+                      "client-id": "AYwP3fdXqQXLwOEm5ZlcdhucyoS3pWvcRfqZcSdmwweLZzYmsCr7jtEE1m9z6KXBHL0IwS9svhMyUXzL",
+                      currency: "USD",
+                    }}
+                  >
+                    <PayPalButtons
+                      createOrder={(data, actions) => {
+                        return actions.order.create({
+                          purchase_units: [
+                            {
+                              amount: {
+                                currency_code: "USD",
+                                value: selectedTicket.standed_ticket_price,
+                              },
+                              description: selectedTicket.title,
+                            },
+                          ],
+                        });
+                      }}
+                      onApprove={async (data, actions) => {
+                        try {
+                          const order = await actions.order.capture();
+                          console.log("Transaction successful:", order);
+                          alert(`Payment successful for ${selectedTicket.title}!`);
+              
+                          // Create the ticket after successful payment
+                          const purchaseDate = new Date().toISOString();
+
+                          console.log(selectedTicket.seat_availability);
+
+                          let availabelSeat = selectedTicket.seat_availability;
+                          let availableStandedSeat = selectedTicket.standed_seat;
+                          let documentID = selectedTicket.documentId;
+                          console.log("document ID:",documentID);
+
+                          const newAvailabbleseat = ((availabelSeat)-1);
+                          const newAvailableStandedSeat = ((availableStandedSeat)-1);
+
+                          console.log(newAvailabbleseat);
+
+                          const ticketData = {
+                            data: {
+                              user: email, // Using email as user identifier
+                              event: selectedTicket.documentId, // Use event documentId
+                              price: selectedTicket.standed_ticket_price,
+                              purchase_date: purchaseDate,
+                            },
+                          };
+              
+                          const response = await axios.post(
+                            "http://localhost:1337/api/tickets",
+                            ticketData
+                          );
+
+                          await axios.put(
+                            `http://localhost:1337/api/events/${documentID}`,
+                            {
+                              data: { seat_availability: newAvailabbleseat,
+                              standed_seat:  newAvailableStandedSeat},
+                            }
+                          );
+
+                          // Send Email Invoice via EmailJS
+          const emailParams = {
+            email_to: email,
+            event_name: selectedStripeTicket.title,
+            ticket_type: buyTicketType.toUpperCase(), // "VIP" or "STANDARD"
+            price: selectedStripeTicket.standed_ticket_price,
+            purchase_date: purchaseDate,
+          };
+
+    emailjs
+      .send(
+        "service_zfsdlu6", // EmailJS Service ID
+        "template_s4fqgwj", // EmailJS Template ID
+        emailParams,
+        "t8hJMiytKA_wek1w5" // EmailJS Public Key
+      )
+      .then((result) => {
+        console.log("Email sent successfully:", result.text);
+      })
+      .catch((err) => {
+        console.error("Error sending email:", err);
+      });
+              
+                          console.log("Ticket added successfully:", response.data);
+                          alert("Ticket has been added successfully!");
+                        } catch (error) {
+                          console.error("Error adding ticket:", error);
+                          alert("Payment was successful, but ticket creation failed!");
+                        }
+                      }}
+                      onError={(err) => {
+                        console.error("PayPal Checkout error:", err);
+                        alert("Payment failed!");
+                      }}
+                    />
+                  </PayPalScriptProvider>
+                </div>
+              )}
+              <button 
+                        href="#"
+                        className="event-details__ticket-two-btn thm-btn"
+                        onClick={() => {createPaymentIntent(event);
+                        setSelectedStripeTicket(event);}}
+                      >
+                        Buy Standed Ticket with Stripe
+                      </button>
+                      <br/><br/>
+                        {/* Stripe Checkout Button */}
+                  {clientSecret && (
+                    <Elements stripe={stripePromise} options={{ clientSecret }}>
+                      <CheckoutForm />
+                    </Elements>
+                  )}
+                    </div>
+                        </div>
+                    )}
+
+                    </div>                
+                  )}
+                  
+                    
                   </div>
                   <div className="event-details__ticket">
                     <h3 className="event-details__ticket-title">

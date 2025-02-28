@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import Layout from "@/components/layout/Layout";
 import Link from "next/link";
+import EventDirection from "@/components/sections/home1/EventDirection"
 
 
 export default function Home() {
@@ -23,7 +24,8 @@ export default function Home() {
     standed_seats: "",
     vip_ticket_price:"",
     standed_ticket_price:"",
-    ticket_type: "normal"
+    ticket_type: "normal",
+    time:""
   });
   const [hostData,setHostData] = useState({
     name: "",
@@ -40,6 +42,8 @@ export default function Home() {
   const [imagePreview, setImagePreview] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [multipleTicket, setMultipleTicket] = useState(false);
+
+
 
   const getCookie = (name) => {
     if (typeof window !== "undefined") {
@@ -119,7 +123,12 @@ export default function Home() {
         is_live_stream: event.is_live_stream,
         event_image: event.event_image
   ? [{ url: `http://localhost:1337${event.event_image[0]?.url}` }] // Prefix URL with the Strapi server URL
-  : [], // Wrap in array
+  : [], 
+  vip_seats: event.vip_seats,
+    standed_seats: event.standed_seats,
+    vip_ticket_price: event.vip_ticket_price,
+    standed_ticket_price: event.standed_ticket_price,
+    ticket_type: event.ticket_type
       }));
 
       setUpcomingEvents(eventsData);
@@ -216,10 +225,14 @@ export default function Home() {
     formPayload.append("data[user]", email);
     formPayload.append("data[ticket_type]", formData.ticket_type);
     formPayload.append("data[standed_ticket_price]", formData.standed_ticket_price);
+    formPayload.append("data[time]", formData.time);
+    formPayload.append("data[seat_availability]", formData.seat_availability);
+
 
     // If "normal" ticket, send normal ticket fields
     if (formData.ticket_type === "normal") {
       formPayload.append("data[seat_capacity]", formData.seat_capacity);
+      formPayload.append("data[standed_seats]", formData.seat_capacity);
     }
 
     // If "multiple" ticket, send multiple ticket fields
@@ -451,6 +464,8 @@ const handleDeleteEvent = async (eventId) => {
         {hostPermission ? (
             // Public Event Form (if hostPermission is true)
             <section className="contact-one">
+              <EventDirection />
+              <br/><br/>
         <div className="container">
           <div className="contact-one__inner">
             <h3 className="contact-one__title">Publish Your Event</h3>
@@ -495,6 +510,17 @@ const handleDeleteEvent = async (eventId) => {
                       type="date"
                       name="date"
                       value={formData.date}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="col-xl-6 col-lg-6">
+                  <div className="contact-one__input-box">
+                    <input
+                      type="time"
+                      name="time"
+                      value={formData.time}
                       onChange={handleChange}
                       required
                     />
@@ -813,7 +839,7 @@ const handleDeleteEvent = async (eventId) => {
                 </div>
                 <div className="team-one__content-hover">
                   <h4 className="team-one__name-hover">
-                    <a href="team-details">{event.ticket_price}</a>
+                    <a href="team-details">{event.standed_ticket_price}</a>
                   </h4>
                   <p className="team-one__sub-title-hover">{event.title}</p>
                   <p className="team-one__text-hover">{event.description}</p>
