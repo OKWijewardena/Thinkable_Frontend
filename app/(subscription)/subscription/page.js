@@ -7,6 +7,7 @@ import Layout from "@/components/layout/Layout";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import Stripe from 'stripe';
+import emailjs from "@emailjs/browser";
 
 const stripePromise = loadStripe("pk_test_51NxmUQJSn6JcxC7VDw4gyCb87TBzvEkx9Hz7UCEe2LfIAFA2L4mujdRRPfOXxmMZ63SyrobzYxnmWlRswjjr2k9z00k4AvAifs");
 const stripe = new Stripe('sk_test_51NxmUQJSn6JcxC7Vt2kGKXaaA7maL4adID8CeHF5UrllHiwXX1o4T4y47pP9LlUQfGKL8K62zm1Vu3crspfqEUP400DReYLtTk');
@@ -188,9 +189,32 @@ export default function Home() {
           data: membershipUpdate,
         });
     
-        console.log("Subscription successfully added:", response.data);
+        console.log("Subscription successfully added:", response.data);                 
         console.log("Profile Updated with new membership balance:", totalBalance);
         alert("Subscription successfully");
+
+        const emailParams = {
+          email_to: email,
+          plan: selectedPlan.name,
+          start_date: startDate.toISOString(),
+          end_date: endDate.toISOString(),
+          subscription_fee: selectedPlan.price,
+          payment_type: "Stripe Payment"
+        };
+
+  emailjs
+    .send(
+      "service_zfsdlu6", // EmailJS Service ID
+      "template_a5nqc1s", // EmailJS Template ID
+      emailParams,
+      "t8hJMiytKA_wek1w5" // EmailJS Public Key
+    )
+    .then((result) => {
+      console.log("Email sent successfully:", result.text);
+    })
+    .catch((err) => {
+      console.error("Error sending email:", err);
+    });
     
         // ✅ Manually redirect after all updates are complete
         window.location.href = `${window.location.origin}/profile`;
@@ -363,6 +387,29 @@ export default function Home() {
                           await axios.put(`http://localhost:1337/api/profiles/${profileId}`, {
                             data: membershipUpdate
                           });
+
+                          const emailParams = {
+                            email_to: email,
+                            plan: selectedPlan.name,
+                            start_date: startDate.toISOString(),
+                            end_date: endDate.toISOString(),
+                            subscription_fee: selectedPlan.price,
+                            payment_type: "Paypal Payment"
+                          };
+                  
+                    emailjs
+                      .send(
+                        "service_zfsdlu6", // EmailJS Service ID
+                        "template_a5nqc1s", // EmailJS Template ID
+                        emailParams,
+                        "t8hJMiytKA_wek1w5" // EmailJS Public Key
+                      )
+                      .then((result) => {
+                        console.log("Email sent successfully:", result.text);
+                      })
+                      .catch((err) => {
+                        console.error("Error sending email:", err);
+                      });
 
                           console.log("Subscription successfully added:", response.data);
                           console.log("Profile Updated with new membership balance:", totalBalance);
