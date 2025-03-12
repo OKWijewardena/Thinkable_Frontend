@@ -29,6 +29,7 @@ const swiperOptions = {
 export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [subscription, setSubscription] = useState([]);
     const [error, setError] = useState("");
     const router = useRouter();
 
@@ -41,19 +42,44 @@ export default function Login() {
                 identifier: email,
                 password: password,
             });
-
-            // Save the token in cookies
+    
+            const userEmail = response.data.user.email;
+    
+            // Save the token & user info in cookies
             document.cookie = `token=${response.data.jwt}; path=/; max-age=3600; Secure; SameSite=Strict`;
-            document.cookie = `email=${response.data.user.email}; path=/; max-age=3600; Secure; SameSite=Strict`;
+            document.cookie = `email=${userEmail}; path=/; max-age=3600; Secure; SameSite=Strict`;
             document.cookie = `documentId=${response.data.user.documentId}; path=/; max-age=3600; Secure; SameSite=Strict`;
-
-            // Redirect to home page
-            router.push("/index-2");
+    
+            // Fetch subscription data
+            const responsesub = await axios.get(`http://localhost:1337/api/subscriptions?filters[user][$eq]=${userEmail}`);
+            console.log("Subscription Data:", responsesub);
+    
+            const subscribeData = responsesub.data.data.map((subscribe) => ({
+                id: subscribe.id,
+                documentId: subscribe.documentId,
+                start_date: subscribe.start_date,
+                end_date: subscribe.end_date,
+                time_period_months: subscribe.time_period_months,
+                subscription_fee: subscribe.subscription_fee
+            }));
+    
+            setSubscription(subscribeData);
+    
+            // Check subscription expiration
+            const currentDate = new Date();
+            const isSubscriptionExpired = subscribeData.some((sub) => new Date(sub.end_date) < currentDate);
+    
+            console.log("Subscription Expired:", isSubscriptionExpired);
+    
+            // Redirect to home page with query param
+            router.push(`/index-2?isSubscriptionExpired=${isSubscriptionExpired}`);
+    
         } catch (err) {
             console.error("Login failed:", err);
             setError("Invalid email or password. Please try again.");
         }
     };
+    
 
     return (
         <>
