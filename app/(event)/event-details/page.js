@@ -16,7 +16,7 @@ import emailjs from "@emailjs/browser";
 import Layout from "@/components/layout/Layout";
 
 const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  "pk_test_51NxmUQJSn6JcxC7VDw4gyCb87TBzvEkx9Hz7UCEe2LfIAFA2L4mujdRRPfOXxmMZ63SyrobzYxnmWlRswjjr2k9z00k4AvAifs"
 );
 
 export default function Home() {
@@ -73,6 +73,7 @@ export default function Home() {
           vip_ticket_price: event.vip_ticket_price,
           standed_ticket_price: event.standed_ticket_price,
           ticket_type: event.ticket_type,
+          time: event.time,
         }));
 
         // Filter the event matching the documentId
@@ -205,10 +206,10 @@ export default function Home() {
 
         emailjs
           .send(
-            process.env.PUBLIC_EMAILJS_SERVICE_ID,
-            process.env.PAYMENT_PUBLIC_EMAILJS_TEMPLATE_ID,
+            "service_ebbp2p9", // EmailJS Service ID
+            "template_s4fqgwj", // EmailJS Template ID
             emailParams,
-            process.env.PUBLIC_EMAILJS_USER_ID
+            "t8hJMiytKA_wek1w5" // EmailJS Public Key
           )
           .then((result) => {
             console.log("Email sent successfully:", result.text);
@@ -276,10 +277,10 @@ export default function Home() {
 
         emailjs
           .send(
-            process.env.PUBLIC_EMAILJS_SERVICE_ID,
-            process.env.PAYMENT_PUBLIC_EMAILJS_TEMPLATE_ID,
+            "service_ebbp2p9", // EmailJS Service ID
+            "template_s4fqgwj", // EmailJS Template ID
             emailParams,
-            process.env.PUBLIC_EMAILJS_USER_ID
+            "t8hJMiytKA_wek1w5" // EmailJS Public Key
           )
           .then((result) => {
             console.log("Email sent successfully:", result.text);
@@ -304,7 +305,7 @@ export default function Home() {
             method: "POST",
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",
-              Authorization: process.env.STRIPE_AUTHORIZATION, // Use environment variable
+              Authorization: `Bearer sk_test_51NxmUQJSn6JcxC7Vt2kGKXaaA7maL4adID8CeHF5UrllHiwXX1o4T4y47pP9LlUQfGKL8K62zm1Vu3crspfqEUP400DReYLtTk`, // Use environment variable
             },
             body: new URLSearchParams({
               amount: event.vip_ticket_price, // Convert to cents
@@ -334,7 +335,7 @@ export default function Home() {
             method: "POST",
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",
-              Authorization: process.env.STRIPE_AUTHORIZATION, // Use environment variable
+              Authorization: `Bearer sk_test_51NxmUQJSn6JcxC7Vt2kGKXaaA7maL4adID8CeHF5UrllHiwXX1o4T4y47pP9LlUQfGKL8K62zm1Vu3crspfqEUP400DReYLtTk`, // Use environment variable
             },
             body: new URLSearchParams({
               amount: event.standed_ticket_price, // Convert to cents
@@ -434,10 +435,10 @@ export default function Home() {
 
           emailjs
             .send(
-              process.env.PUBLIC_EMAILJS_SERVICE_ID,
-              process.env.PAYMENT_PUBLIC_EMAILJS_TEMPLATE_ID,
+              "service_ebbp2p9", // EmailJS Service ID
+              "template_s4fqgwj", // EmailJS Template ID
               emailParams,
-              process.env.PUBLIC_EMAILJS_USER_ID
+              "t8hJMiytKA_wek1w5" // EmailJS Public Key
             )
             .then((result) => {
               console.log("Email sent successfully:", result.text);
@@ -522,10 +523,10 @@ export default function Home() {
 
           emailjs
             .send(
-              process.env.PUBLIC_EMAILJS_SERVICE_ID,
-              process.env.PAYMENT_PUBLIC_EMAILJS_TEMPLATE_ID,
+              "service_ebbp2p9", // EmailJS Service ID
+              "template_s4fqgwj", // EmailJS Template ID
               emailParams,
-              process.env.PUBLIC_EMAILJS_USER_ID
+              "t8hJMiytKA_wek1w5" // EmailJS Public Key
             )
             .then((result) => {
               console.log("Email sent successfully:", result.text);
@@ -589,7 +590,7 @@ export default function Home() {
                             <li>
                               <p>
                                 <span className="icon-clock"></span>
-                                Event Date and time: {event.date}
+                                Event Date and time: {event.date} : {event.time}
                               </p>
                             </li>
                             <li>
@@ -734,7 +735,8 @@ export default function Home() {
                                   <br />
                                   <PayPalScriptProvider
                                     options={{
-                                      "client-id": process.env.PAYPAL_CLIENTID,
+                                      "client-id":
+                                        "AYwP3fdXqQXLwOEm5ZlcdhucyoS3pWvcRfqZcSdmwweLZzYmsCr7jtEE1m9z6KXBHL0IwS9svhMyUXzL",
                                       currency: "USD",
                                     }}
                                   >
@@ -811,40 +813,6 @@ export default function Home() {
                                               },
                                             }
                                           );
-
-                                          // Send Email Invoice via EmailJS
-                                          const emailParams = {
-                                            email_to: email,
-                                            event_name:
-                                              selectedStripeTicket.title,
-                                            ticket_type:
-                                              buyTicketType.toUpperCase(), // "VIP" or "STANDARD"
-                                            price:
-                                              selectedStripeTicket.standed_ticket_price,
-                                            purchase_date: purchaseDate,
-                                          };
-
-                                          emailjs
-                                            .send(
-                                              process.env
-                                                .PUBLIC_EMAILJS_SERVICE_ID,
-                                              process.env
-                                                .PAYMENT_PUBLIC_EMAILJS_TEMPLATE_ID,
-                                              emailParams,
-                                              process.env.PUBLIC_EMAILJS_USER_ID
-                                            )
-                                            .then((result) => {
-                                              console.log(
-                                                "Email sent successfully:",
-                                                result.text
-                                              );
-                                            })
-                                            .catch((err) => {
-                                              console.error(
-                                                "Error sending email:",
-                                                err
-                                              );
-                                            });
 
                                           console.log(
                                             "Ticket added successfully:",
@@ -967,7 +935,7 @@ export default function Home() {
                                       <PayPalScriptProvider
                                         options={{
                                           "client-id":
-                                            process.env.PAYPAL_CLIENTID,
+                                            "AYwP3fdXqQXLwOEm5ZlcdhucyoS3pWvcRfqZcSdmwweLZzYmsCr7jtEE1m9z6KXBHL0IwS9svhMyUXzL",
                                           currency: "USD",
                                         }}
                                       >
@@ -1067,13 +1035,10 @@ export default function Home() {
 
                                               emailjs
                                                 .send(
-                                                  process.env
-                                                    .PUBLIC_EMAILJS_SERVICE_ID,
-                                                  process.env
-                                                    .PAYMENT_PUBLIC_EMAILJS_TEMPLATE_ID,
+                                                  "service_ebbp2p9", // EmailJS Service ID
+                                                  "template_s4fqgwj", // EmailJS Template ID
                                                   emailParams,
-                                                  process.env
-                                                    .PUBLIC_EMAILJS_USER_ID
+                                                  "t8hJMiytKA_wek1w5" // EmailJS Public Key
                                                 )
                                                 .then((result) => {
                                                   console.log(
@@ -1177,7 +1142,7 @@ export default function Home() {
                                       <PayPalScriptProvider
                                         options={{
                                           "client-id":
-                                            process.env.PAYPAL_CLIENTID,
+                                            "AYwP3fdXqQXLwOEm5ZlcdhucyoS3pWvcRfqZcSdmwweLZzYmsCr7jtEE1m9z6KXBHL0IwS9svhMyUXzL",
                                           currency: "USD",
                                         }}
                                       >
@@ -1277,13 +1242,10 @@ export default function Home() {
 
                                               emailjs
                                                 .send(
-                                                  process.env
-                                                    .PUBLIC_EMAILJS_SERVICE_ID,
-                                                  process.env
-                                                    .PAYMENT_PUBLIC_EMAILJS_TEMPLATE_ID,
+                                                  "service_ebbp2p9", // EmailJS Service ID
+                                                  "template_s4fqgwj", // EmailJS Template ID
                                                   emailParams,
-                                                  process.env
-                                                    .PUBLIC_EMAILJS_USER_ID
+                                                  "t8hJMiytKA_wek1w5" // EmailJS Public Key
                                                 )
                                                 .then((result) => {
                                                   console.log(
